@@ -1,0 +1,83 @@
+{
+  "MEGA_GROWTH": [
+    {
+      "Commodity": "AUTOMOTIVE DIESEL FUEL, NOT CONTAINING BIODIESEL, CONFORMING TO STANDARD IS 1460",
+      "Value_2023_M": 19455.88,
+      "Growth_5yr_%": 121.06869465720848
+    },
+    {
+      "Commodity": "AVIATION TURBINE FUELS, KEROSENE TYPE CONFORMING TO STANDARD IS 1571",
+      "Value_2023_M": 15202.66,
+      "Growth_5yr_%": 3435.0090685020696
+    },
+    {
+      "Commodity": "MOTOR GASOLINE CONFORMING TO STANDARD IS 2796",
+      "Value_2023_M": 10502.89,
+      "Growth_5yr_%": 188.08585339093463
+    },
+    {
+      "Commodity": "AEROPLANES AND OTHR AIRCRAFT,OF AN UNLADEN  WEIGHT EXCEEDING 15000 KG",
+      "Value_2023_M": 5544.53,
+      "Growth_5yr_%": 4689.263194264489
+    },
+    {
+      "Commodity": "MOTOR CAR WTH CYLNDR CPCTY>=1000CC BUT     < 1500CC WTH SPRK-IGNTN",
+      "Value_2023_M": 5098.6,
+      "Growth_5yr_%": 157.0182734719597
+    }
+  ],
+  "HIGH_VALUE_GROWING": [
+    {
+      "Commodity": "India's Total Export",
+      "Value_2023_M": 437704.58,
+      "Growth_5yr_%": 49.99721049916029
+    },
+    {
+      "Commodity": "OTHER  MEDCNE PUT UP FOR RETAIL SALE N.E.S",
+      "Value_2023_M": 9778.33,
+      "Growth_5yr_%": 22.75189463126088
+    },
+    {
+      "Commodity": "TURBO-JETS OF A THRUST>25 KN",
+      "Value_2023_M": 4766.73,
+      "Growth_5yr_%": 98.23215310527235
+    },
+    {
+      "Commodity": "HIGH FLASH HIGH SPEED DIESEL FUEL CONFORMING TO STANDARD IS 16861",
+      "Value_2023_M": 4628.24,
+      "Growth_5yr_%": 42.39686915427784
+    },
+    {
+      "Commodity": "BONELESS MEAT OF BOVINE ANIMALS , FROZEN",
+      "Value_2023_M": 3669.38,
+      "Growth_5yr_%": 28.66259458473881
+    }
+  ],
+  "EMERGING_OPPORTUNITY": [
+    {
+      "Commodity": "OTHERS-OF-STATIC CONVERTERS",
+      "Value_2023_M": 910.29,
+      "Growth_5yr_%": 121.3847949803006
+    },
+    {
+      "Commodity": "FLUE CURED VIRGINIA TOBACCO PARTLY /      WHOLLYSTMD/STRIPPED",
+      "Value_2023_M": 894.97,
+      "Growth_5yr_%": 155.60347289655567
+    },
+    {
+      "Commodity": "OTHER PARTS OF THE ITEMS UNDR HDG 8481",
+      "Value_2023_M": 882.86,
+      "Growth_5yr_%": 113.84522223567882
+    },
+    {
+      "Commodity": "OTHER PARTS OF HDG 8538",
+      "Value_2023_M": 868.84,
+      "Growth_5yr_%": 108.96628024436001
+    },
+    {
+      "Commodity": "OTHR DRESSES OF COTTON",
+      "Value_2023_M": 830.78,
+      "Growth_5yr_%": 143.9166177334116
+    }
+  ]
+}
