@@ -1,5 +1,7 @@
 # 📦 India Trade & Export Analysis (2020–2026)
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/herrrickshaw/india-trade-export-analysis/blob/main/notebooks/colab_test.ipynb)
+
 Analysis of India's **import/export trade**, fiscal reserves, and high-opportunity
 export sectors across the post-pandemic period. (Original detailed notes preserved in
 the `*_ANALYSIS.md` / `*_SUMMARY.md` files.)
