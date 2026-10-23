@@ -4,31 +4,27 @@ Reduces data to essentials: commodity, value, growth rates, and classification.
 """
 import pandas as pd
 import os
+from tradestat_config import export_files, out_dir, drop_total_row, merge_years
 
 def create_optimized_export():
     """Create compact CSVs optimized for token reduction"""
 
-    # Load 2020 and 2023 data
-    df_2020 = pd.read_excel(
-        "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-        skiprows=2
-    )
-    df_2023 = pd.read_excel(
-        "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise.xlsx",
-        skiprows=2
-    )
+    # Load 2020 and 2023 data (set --data-dir / TRADESTAT_DIR)
+    files = export_files([2020, 2023])
+    df_2020 = pd.read_excel(files[2020], skiprows=2)
+    df_2023 = pd.read_excel(files[2023], skiprows=2)
 
     # Standardize columns
     cols = ['S.No.', 'HSCode', 'Commodity', 'Value_2020_M', 'Share_2020', 'Value_2023_M', 'Share_2023', 'Growth_%']
     df_2020.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_2020_M', 'Share', 'Value_Next_M', 'Share_Next', 'Growth_%']
     df_2023.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_2023_M', 'Share', 'Value_Next_M', 'Share_Next', 'Growth_%']
 
-    # Merge
-    merged = pd.merge(
+    # Drop the grand-total row, then merge on HSCode+Commodity (text alone is many-to-many)
+    df_2020, _ = drop_total_row(df_2020, 'Commodity')
+    df_2023, _ = drop_total_row(df_2023, 'Commodity')
+    merged = merge_years(
         df_2020[['Commodity', 'Value_2020_M', 'HSCode']],
-        df_2023[['Commodity', 'Value_2023_M', 'Growth_%']],
-        on='Commodity',
-        how='inner'
+        df_2023[['HSCode', 'Commodity', 'Value_2023_M', 'Growth_%']],
     )
 
     # Clean
@@ -61,7 +57,7 @@ def create_optimized_export():
     ])].sort_values('Value_2023_M', ascending=False)
 
     high_opp[['Commodity', 'HSCode', 'Value_2020_M', 'Value_2023_M', 'Growth_5yr_%', 'Opportunity']].to_csv(
-        '/Users/umashankar/Downloads/HIGH_OPPORTUNITY_EXPORTS.csv',
+        out_dir() / 'HIGH_OPPORTUNITY_EXPORTS.csv',
         index=False
     )
     print(f"✓ HIGH_OPPORTUNITY_EXPORTS.csv ({len(high_opp)} rows)")
@@ -69,7 +65,7 @@ def create_optimized_export():
     # Export 2: Mega growth only (ultra-compact)
     mega = merged[merged['Opportunity'] == 'MEGA_GROWTH'].sort_values('Value_2023_M', ascending=False)
     mega[['Commodity', 'Value_2023_M', 'Growth_5yr_%']].to_csv(
-        '/Users/umashankar/Downloads/MEGA_GROWTH_EXPORTS.csv',
+        out_dir() / 'MEGA_GROWTH_EXPORTS.csv',
         index=False
     )
     print(f"✓ MEGA_GROWTH_EXPORTS.csv ({len(mega)} rows)")
@@ -91,7 +87,7 @@ def create_optimized_export():
         subset = merged[merged['Opportunity'] == cat].nlargest(5, 'Value_2023_M')
         top_by_category[cat] = subset[['Commodity', 'Value_2023_M', 'Growth_5yr_%']].to_dict('records')
 
-    with open('/Users/umashankar/Downloads/TOP_OPPORTUNITIES.json', 'w') as f:
+    with open(out_dir() / 'TOP_OPPORTUNITIES.json', 'w') as f:
         json.dump(top_by_category, f, indent=2, default=str)
     print(f"\n✓ TOP_OPPORTUNITIES.json (top 5 per category)")
 
@@ -99,4 +95,4 @@ def create_optimized_export():
 
 if __name__ == '__main__':
     create_optimized_export()
-    print("\n✓ Token-optimized exports created in /Users/umashankar/Downloads/")
+    print(f"\n✓ Token-optimized exports created in {out_dir()}")

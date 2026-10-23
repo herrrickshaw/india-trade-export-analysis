@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from pathlib import Path
 import warnings
+from tradestat_config import export_files, drop_total_row, merge_years
 warnings.filterwarnings('ignore')
 
 def load_export_file(filepath):
@@ -11,14 +12,11 @@ def load_export_file(filepath):
     df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
     df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
+    df, _ = drop_total_row(df, 'Commodity', 'Value_Current_Million')  # grand-total row would double every sum
     return df
 
 # Load files with year detection
-files = {
-    2020: "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-    2022: "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-    2023: "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise.xlsx",
-}
+files = export_files()  # set --data-dir / TRADESTAT_DIR
 
 # Load data
 data = {}
@@ -66,13 +64,13 @@ print("5-YEAR GROWTH TREND ANALYSIS (2020 → 2023)")
 print("="*90)
 
 if 2020 in data and 2023 in data:
-    df_2020 = data[2020][['Commodity', 'Value_Current_Million']].rename(
+    df_2020 = data[2020][['HSCode', 'Commodity', 'Value_Current_Million']].rename(
         columns={'Value_Current_Million': 'Value_2020'})
-    df_2023 = data[2023][['Commodity', 'Value_Current_Million']].rename(
+    df_2023 = data[2023][['HSCode', 'Commodity', 'Value_Current_Million']].rename(
         columns={'Value_Current_Million': 'Value_2023'})
 
-    # Merge on commodity
-    merged = pd.merge(df_2020, df_2023, on='Commodity', how='inner')
+    # Merge on HSCode+Commodity (Commodity text alone is many-to-many)
+    merged = merge_years(df_2020, df_2023)
     merged['Value_2020'] = pd.to_numeric(merged['Value_2020'], errors='coerce')
     merged['Value_2023'] = pd.to_numeric(merged['Value_2023'], errors='coerce')
     merged = merged.dropna()

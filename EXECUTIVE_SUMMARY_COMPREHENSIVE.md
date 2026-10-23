@@ -1,3 +1,5 @@
+> **CORRECTION (2026-10-23):** totals in this document that read $583.6B / $875.4B (exports), $1,442.4B (imports) or -$567.0B (deficit), and projections built on them, are exactly 2x the true values (grand-total row double counted). See the "Known data issues" section of [README.md](README.md) and `data/india_merchandise_trade_totals_FY2018-19_to_FY2025-26.csv`.
+
 # India's External Account & Fiscal Sustainability: Comprehensive Executive Summary
 
 **Date**: 2026-06-25  

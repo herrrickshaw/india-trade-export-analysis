@@ -14,12 +14,9 @@ def extract_year(filepath):
     else:
         return 2023  # Default to latest
 
-# File paths
-export_files = [
-    "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-    "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-    "/Users/umashankar/Downloads/import export data/TradeStat-Eidb-Export-Commodity-wise.xlsx",
-]
+# File paths (set --data-dir / TRADESTAT_DIR; see tradestat_config.py)
+from tradestat_config import export_files as _export_files, drop_total_row
+export_files = [str(p) for p in _export_files().values()]
 
 # Load all data
 all_data = {}
@@ -58,6 +55,7 @@ for year, df in sorted(all_data.items()):
             qty_col = col
 
     if commodity_col and value_col and qty_col:
+        df, _ = drop_total_row(df, commodity_col, value_col)  # total row would double every sum
         subset = df[[commodity_col, value_col, qty_col, 'Year']].copy()
         subset.columns = ['Commodity', 'Value_USD', 'Quantity', 'Year']
         combined.append(subset)
