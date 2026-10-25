@@ -9,12 +9,18 @@ from pathlib import Path
 import numpy as np
 from datetime import datetime
 
+# TradeStat appends an "India's Total Export" row; keep it out of commodity sums.
+TOTAL_ROW_PATTERN = r"^\s*(india'?s\s+)?total(\s+(export|import)s?)?\s*$"
+
 def load_export_file(filepath, year=None):
     """Load export data from Excel file"""
     df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
     df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
     df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
+    is_total = (df['Commodity'].astype(str).str.match(TOTAL_ROW_PATTERN, case=False)
+                | df['HSCode'].astype(str).str.match(TOTAL_ROW_PATTERN, case=False))
+    df = df[~is_total].copy()
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
     df['Growth_%'] = pd.to_numeric(df['Growth_%'], errors='coerce')
     if year:
