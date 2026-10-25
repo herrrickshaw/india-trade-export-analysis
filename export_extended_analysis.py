@@ -7,7 +7,6 @@ import pandas as pd
 import os
 from pathlib import Path
 import numpy as np
-from datetime import datetime
 
 # TradeStat appends an "India's Total Export" row; keep it out of commodity sums.
 TOTAL_ROW_PATTERN = r"^\s*(india'?s\s+)?total(\s+(export|import)s?)?\s*$"
