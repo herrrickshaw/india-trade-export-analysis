@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 from pathlib import Path
-from collections import defaultdict
 import warnings
 warnings.filterwarnings('ignore')
 
