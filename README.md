@@ -1,38 +1,96 @@
-# 📦 India Trade & Export Analysis (2020–2026)
+# India Trade & Export Analysis (2020–2026)
 
-<!-- how-to-use-with-ai -->
-> **New here?** See [How to use this repo with AI (Claude, Gemini, ChatGPT)](HOW_TO_USE_WITH_AI.md) — clone it, paste it into an AI tool, and ask in plain English.
+Scripts and write-ups analysing India's merchandise exports and imports (commodity-wise, from the
+DGCI&S TradeStat workbooks), plus companion notes on RBI reserves, the trade deficit, tax/fiscal
+collections and high-opportunity export sectors for the post-pandemic period. The scripts produce
+console reports and small CSV/JSON extracts (high-opportunity exports, 2025–26 projections) that are
+tracked in this repo.
 
+> Status: research-only snapshot. Indicative analysis built from public trade/fiscal data, not official
+> statistics and not investment advice. The input workbooks are **not** in the repo; the committed CSV/JSON
+> and `*.md` files are outputs of earlier runs on the author's machine.
 
+New here? See [How to use this repo with AI (Claude, Gemini, ChatGPT)](HOW_TO_USE_WITH_AI.md).
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/herrrickshaw/india-trade-export-analysis/blob/main/notebooks/colab_test.ipynb)
 
-Analysis of India's **import/export trade**, fiscal reserves, and high-opportunity
-export sectors across the post-pandemic period. (Original detailed notes preserved in
-the `*_ANALYSIS.md` / `*_SUMMARY.md` files.)
+## What it does
+- Screens exports for high value-per-unit and strong 5-year growth (`export_analysis.py`).
+- Prints headline export insights: strong growers, 2020→2023 trend, emerging and premium exports (`export_insights.py`).
+- Projects 2025/2026 export values per commodity from the 2020→2023 CAGR (outliers above 500% a year are capped to 30%) and writes `EXTENDED_ANALYSIS_2020_2026.csv` and `HIGH_OPPORTUNITY_2026_PROJECTIONS.csv` (`export_extended_analysis.py`).
+- Classifies commodities as MEGA_GROWTH / HIGH_VALUE_GROWING / EMERGING_OPPORTUNITY / PREMIUM_STABLE and writes compact extracts (`export_opportunities.py`).
+- Compares imports with exports, net exporter/importer commodities and 2026 trade-balance scenarios (`import_export_comparison.py`).
+- Includes a Claude Code `UserPromptSubmit` hook that inlines `@"file"` references as markdown (`markitdown-preprocessor.py`).
 
-## Contents
-
-| File | What it does |
-|---|---|
-| `export_analysis.py` | Core export analysis |
-| `export_extended_analysis.py` | Extended 2020–2026 trend analysis |
-| `export_insights.py` | Insight generation |
-| `export_opportunities.py` | High-opportunity export identification |
-| `import_export_comparison.py` | Import vs export comparison |
-| `markitdown-preprocessor.py` | Source-doc preprocessing |
-| `*.md` | Writeups — executive summary, YoY trends, RBI reserves vs trade deficit, tax/fiscal, 5-year post-pandemic comparison |
-| `*.csv`, `*.json` | Datasets — extended analysis, mega-growth & high-opportunity exports, top opportunities |
-
-## Run
+## Quick start
 ```bash
-python export_analysis.py
+git clone https://github.com/herrrickshaw/india-trade-export-analysis.git
+cd india-trade-export-analysis
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+# put the TradeStat workbooks in ~/Downloads/import export data/ (see "Data sources"), then:
 python export_extended_analysis.py
-python export_opportunities.py
 ```
 
-## Related repos
+## How it works
+| Stage | Module | Output |
+|---|---|---|
+| Paths and workbook loading (skips the 2 title rows, names the 8 columns, coerces numerics) | `trade_common.py` | pandas frames in USD million |
+| Per-script analysis (pure functions) and console report | `export_*.py`, `import_export_comparison.py` | stdout |
+| Extracts | `export_extended_analysis.py` → current directory; `export_opportunities.py` → `~/Downloads` | CSV / JSON |
+
+Each analysis script keeps its thresholds as named constants at the top of the file and exposes its
+pure computation (`build_projection_frame`, `classify_opportunity`, `growth_summary`, ...) separately
+from printing and file writing, so the logic can be tested without any workbook.
+
+Input layouts differ by script: all scripts except `export_analysis.py` read the TradeStat layout
+(2 title rows, then the 8 columns `S.No., HSCode, Commodity, Value, Share, Value(next), Share(next), Growth %`);
+`export_analysis.py` expects a header row with commodity, value and quantity columns, found by keyword.
+
+## Repository layout
+| Path | Purpose |
+|---|---|
+| `trade_common.py` | Shared paths, workbook loader and load-error tuple |
+| `export_analysis.py` | Value-per-unit and growth screen |
+| `export_extended_analysis.py` | 2020–2023 trend with 2025–26 projections |
+| `export_insights.py` | Console insight report |
+| `export_opportunities.py` | Opportunity classification and compact extracts |
+| `import_export_comparison.py` | Import vs export balance and scenarios |
+| `markitdown-preprocessor.py` | Claude Code prompt hook (file → markdown, cached in `~/.claude/hooks/.markitdown-cache`) |
+| `*.md` | Write-ups: executive summary, YoY trends, RBI reserves vs trade deficit, tax/fiscal, 5-year post-pandemic comparison, token-savings notes |
+| `*.csv`, `TOP_OPPORTUNITIES.json` | Committed outputs of earlier runs (not regenerated by tests) |
+| `tests/` | pytest suite using synthetic workbooks under a fake `HOME` |
+| `notebooks/colab_test.ipynb` | Colab test notebook |
+
+## Data sources
+| Source | What is taken | Access route | Licence / caveat |
+|---|---|---|---|
+| DGCI&S / Ministry of Commerce TradeStat (EIDB) | Commodity-wise export and import values (USD million), HS codes | Manual download of `TradeStat-Eidb-Export-Commodity-wise 2020.xlsx`, `...wise2022.xlsx`, `...wise.xlsx`, `TradeStat-Eidb-Import-Commodity-wise.xlsx` | Public government data; redistribute only as permitted by the source |
+
+The scripts look in `~/Downloads/import export data/`. The import workbook has no year in its name; the
+comparison script assumes it matches the latest export year. The RBI/fiscal narratives in the `*.md`
+files are not computed by the scripts here.
+
+## Configuration
+No environment variables or secrets. Paths are derived from `Path.home()` (`trade_common.data_dir()` /
+`output_dir()`); thresholds are module-level constants.
+
+## Testing
+```bash
+pip install pytest ruff tabulate
+pytest -q          # 38 tests, ~6 s, no network, no real data
+ruff check .
+```
+
+## Limitations and known issues
+- Hard-wired to `~/Downloads/import export data/`; there is no CLI flag to point elsewhere.
+- Projections are CAGR extrapolations from three data years (2020, 2022, 2023); the "5-year" labels refer to the 2020→2023 window.
+- Imports are a single year, so import growth in the scenarios is an assumption (90% of the export CAGR).
+- `export_extended_analysis.py` writes its CSVs to the current working directory, the others to `~/Downloads`.
+- Some write-ups contain figures not reproduced by the scripts; treat them as narrative.
+
+## Related repositories
 - [`fuel-retail-outlets`](https://github.com/herrrickshaw/fuel-retail-outlets)
 - [`global-market-scanners`](https://github.com/herrrickshaw/global-market-scanners)
 
-## Notes
-Built from public trade/fiscal data sources. Indicative analysis, not official statistics.
+## Licence
+No licence file yet — all rights reserved.
