@@ -3,85 +3,64 @@ Import vs Export Comparison Analysis
 Compares trade flows and projects trade balance through 2026
 """
 
+from __future__ import annotations
+
 import pandas as pd
-import os
-from pathlib import Path
-import numpy as np
+
+from trade_common import (IMPORT_FILENAME, LOAD_ERRORS, data_dir, export_paths,
+                          load_trade_file)
+
+# Projection assumptions (the import workbook covers a single year, so import growth is assumed)
+TARGET_YEAR = 2026
+FALLBACK_EXPORT_CAGR = 0.13
+IMPORT_TO_EXPORT_CAGR_RATIO = 0.9
+BALANCED_TRADE_BAND_M = 1000  # USD million
+
 
 def load_export_file(filepath, year=None):
     """Load export data"""
-    df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
-    df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
-                  'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
-    df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
-    df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
-    if year:
-        df['Year'] = year
-    df['Type'] = 'EXPORT'
-    return df
+    return load_trade_file(filepath, year, trade_type='EXPORT')
+
 
 def load_import_file(filepath, year=None):
     """Load import data"""
-    df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
-    df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
-                  'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
-    df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
-    df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
-    if year:
-        df['Year'] = year
-    df['Type'] = 'IMPORT'
-    return df
+    return load_trade_file(filepath, year, trade_type='IMPORT')
+
 
 def load_all_data():
     """Load both import and export data"""
-    base_path = Path.home() / "Downloads" / "import export data"
-
-    data = {}
-
-    # Export files
-    export_files = {
-        2020: base_path / "TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-        2022: base_path / "TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-        2023: base_path / "TradeStat-Eidb-Export-Commodity-wise.xlsx",
-    }
-
-    # Import files
-    import_files = {
-        2020: base_path / "TradeStat-Eidb-Import-Commodity-wise.xlsx",  # Assuming same name pattern
-    }
-
     print("\n" + "="*100)
     print("LOADING TRADE DATA")
     print("="*100)
 
     # Load exports
-    data['exports'] = {}
-    for year, filepath in export_files.items():
-        if os.path.exists(filepath):
+    data = {'exports': {}}
+    for year, filepath in export_paths().items():
+        if filepath.exists():
             try:
                 df = load_export_file(filepath, year)
                 data['exports'][year] = df
                 print(f"✓ Exports {year}: {len(df)} commodities, ${df['Value_Current_Million'].sum():,.0f}M total")
-            except Exception as e:
+            except LOAD_ERRORS as e:
                 print(f"✗ Error loading exports {year}: {e}")
 
     # Load imports
     data['imports'] = {}
     # Try to detect which year the import file is from
-    import_path = base_path / "TradeStat-Eidb-Import-Commodity-wise.xlsx"
-    if os.path.exists(import_path):
+    import_path = data_dir() / IMPORT_FILENAME
+    if import_path.exists():
         try:
-            # Try loading and checking the data to infer year
             df = load_import_file(import_path)
             # Assume it's the same year as the latest export data
             latest_year = max(data['exports'].keys())
             df['Year'] = latest_year
             data['imports'][latest_year] = df
             print(f"✓ Imports {latest_year}: {len(df)} commodities, ${df['Value_Current_Million'].sum():,.0f}M total")
-        except Exception as e:
+        except LOAD_ERRORS as e:
             print(f"✗ Error loading imports: {e}")
 
     return data
+
 
 def analyze_trade_balance(data):
     """Analyze import vs export balance"""
@@ -206,7 +185,7 @@ def analyze_commodity_comparison(data):
         print("-"*100)
 
         balanced = merged[
-            (merged['Trade_Balance'].abs() <= 1000) &
+            (merged['Trade_Balance'].abs() <= BALANCED_TRADE_BAND_M) &
             (merged['Export_Value'] > 0) &
             (merged['Import_Value'] > 0)
         ].nlargest(10, 'Export_Value')[
@@ -245,10 +224,10 @@ def project_trade_balance(data):
 
             print(f"\nExport CAGR ({first_year}-{last_year}): {exp_cagr*100:.2f}%")
         else:
-            exp_cagr = 0.13  # Use 13% from earlier analysis
+            exp_cagr = FALLBACK_EXPORT_CAGR  # 13% from earlier analysis
 
         # Calculate import growth (single year, assume similar to export)
-        imp_cagr = exp_cagr * 0.9  # Assume imports grow slightly slower
+        imp_cagr = exp_cagr * IMPORT_TO_EXPORT_CAGR_RATIO  # Assume imports grow slightly slower
 
         print(f"Projected Import CAGR: {imp_cagr*100:.2f}%")
 
@@ -260,8 +239,8 @@ def project_trade_balance(data):
         latest_import_value = import_summary[latest_import_year]
 
         # Years ahead
-        years_ahead_export = 2026 - latest_export_year
-        years_ahead_import = 2026 - latest_import_year
+        years_ahead_export = TARGET_YEAR - latest_export_year
+        years_ahead_import = TARGET_YEAR - latest_import_year
 
         # Projections
         proj_2026_export = latest_export_value * (1 + exp_cagr) ** years_ahead_export
