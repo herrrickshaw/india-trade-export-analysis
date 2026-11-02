@@ -113,7 +113,7 @@ def analyze_trade_balance(data):
             balance = exp - imp
             ratio = exp / imp
 
-            print(f"\n" + "-"*100)
+            print("\n" + "-"*100)
             print(f"LATEST YEAR ANALYSIS ({latest_export_year})")
             print("-"*100)
             print(f"\nTotal Exports:      ${exp:,.0f}M")
@@ -152,7 +152,7 @@ def analyze_commodity_comparison(data):
         merged['Export_Share_%'] = (merged['Export_Value'] / (merged['Export_Value'] + merged['Import_Value']) * 100).fillna(0)
 
         # Top net exporters
-        print(f"\n" + "-"*100)
+        print("\n" + "-"*100)
         print(f"TOP NET EXPORTER COMMODITIES ({year})")
         print("-"*100)
 
@@ -166,7 +166,7 @@ def analyze_commodity_comparison(data):
             print("No data available for commodity-level comparison")
 
         # Top net importers
-        print(f"\n" + "-"*100)
+        print("\n" + "-"*100)
         print(f"TOP NET IMPORTER COMMODITIES ({year})")
         print("-"*100)
 
@@ -180,8 +180,8 @@ def analyze_commodity_comparison(data):
             print("No data available for commodity-level comparison")
 
         # Balanced commodities
-        print(f"\n" + "-"*100)
-        print(f"BALANCED TRADE (Trade Balance within ±$1B)")
+        print("\n" + "-"*100)
+        print("BALANCED TRADE (Trade Balance within ±$1B)")
         print("-"*100)
 
         balanced = merged[
@@ -248,7 +248,7 @@ def project_trade_balance(data):
 
         proj_trade_balance = proj_2026_export - proj_2026_import
 
-        print(f"\n" + "-"*100)
+        print("\n" + "-"*100)
         print("2026 TRADE BALANCE PROJECTION")
         print("-"*100)
         print(f"\nProjected 2026 Exports:    ${proj_2026_export:,.0f}M")
@@ -258,7 +258,7 @@ def project_trade_balance(data):
         print(f"(Exports are {(proj_2026_export/proj_2026_import):.1%} of Imports)")
 
         # Scenario analysis
-        print(f"\n" + "-"*100)
+        print("\n" + "-"*100)
         print("TRADE BALANCE SCENARIOS (2026)")
         print("-"*100)
 
