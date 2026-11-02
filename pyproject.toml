@@ -1,0 +1,22 @@
+[project]
+name = "india-trade-export-analysis"
+version = "0.1.0"
+description = "India import/export trade analysis 2020-2026 scripts and write-ups"
+requires-python = ">=3.9"
+dependencies = ["pandas", "numpy", "openpyxl"]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "tabulate"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py39"
+extend-exclude = [".venv", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+ignore = ["E501", "B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
