@@ -3,56 +3,23 @@ Extended export analysis with 2025-26 data and growth projections
 Handles multiple years, trend analysis, and forecasting
 """
 
-import pandas as pd
-import os
-from pathlib import Path
+from __future__ import annotations
+
 import numpy as np
-from datetime import datetime
+import pandas as pd
 
-def load_export_file(filepath, year=None):
-    """Load export data from Excel file"""
-    df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
-    df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
-                  'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
-    df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
-    df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
-    df['Growth_%'] = pd.to_numeric(df['Growth_%'], errors='coerce')
-    if year:
-        df['Year'] = year
-    return df
+from trade_common import load_all_exports
 
-def extract_year(filepath):
-    """Extract year from filename"""
-    if "2020" in filepath:
-        return 2020
-    elif "2022" in filepath:
-        return 2022
-    elif "2025" in filepath or "2026" in filepath:
-        return 2025
-    else:
-        return 2023  # Default to latest
+HISTORY_YEARS = 3          # 2020 -> 2023
+CAGR_OUTLIER_CAP = 5       # >500% annual growth is not a sustainable projection basis
+CAGR_OUTLIER_REPLACEMENT = 0.3
+BASE_YEAR = 2023
+
 
 def load_all_files():
     """Load all available export data files"""
-    base_path = Path.home() / "Downloads" / "import export data"
+    return load_all_exports()
 
-    files = {
-        2020: base_path / "TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-        2022: base_path / "TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-        2023: base_path / "TradeStat-Eidb-Export-Commodity-wise.xlsx",
-    }
-
-    data = {}
-    for year, filepath in files.items():
-        if os.path.exists(filepath):
-            try:
-                df = load_export_file(filepath, year)
-                data[year] = df
-                print(f"✓ Loaded {year}: {len(df)} commodities")
-            except Exception as e:
-                print(f"✗ Error loading {year}: {e}")
-
-    return data
 
 def project_growth(value_2020, value_2023, target_year=2025):
     """Project value for future year based on historical growth"""
@@ -60,34 +27,24 @@ def project_growth(value_2020, value_2023, target_year=2025):
         return np.nan
 
     # Calculate CAGR (Compound Annual Growth Rate)
-    years = 3  # 2020 to 2023
     try:
-        cagr = (value_2023 / value_2020) ** (1/years) - 1
+        cagr = (value_2023 / value_2020) ** (1 / HISTORY_YEARS) - 1
 
         # Limit CAGR to reasonable bounds (handle extreme outliers)
-        if cagr > 5:  # >500% annual growth is unrealistic for sustainable projection
-            cagr = 0.3  # Use conservative 30% growth instead
+        if cagr > CAGR_OUTLIER_CAP:
+            cagr = CAGR_OUTLIER_REPLACEMENT  # Use conservative 30% growth instead
         elif np.isnan(cagr) or np.isinf(cagr):
             return np.nan
 
         # Project to target year
-        years_ahead = target_year - 2023
-        projected = value_2023 * (1 + cagr) ** years_ahead
-
-        return projected
-    except:
+        years_ahead = target_year - BASE_YEAR
+        return value_2023 * (1 + cagr) ** years_ahead
+    except (ArithmeticError, ValueError):
         return np.nan
 
-def analyze_extended_trends():
-    """Analyze trends across 2020-2023 with 2025-26 projections"""
 
-    data = load_all_files()
-
-    if len(data) < 2:
-        print("Not enough data for trend analysis (need at least 2 years)")
-        return
-
-    # Merge 2020 and 2023 for growth analysis
+def build_projection_frame(data):
+    """Join 2020 and 2023 values per commodity and add growth plus 2025/2026 CAGR projections (USD million)."""
     df_2020 = data[2020][['Commodity', 'Value_Current_Million']].rename(
         columns={'Value_Current_Million': 'Value_2020'})
     df_2023 = data[2023][['Commodity', 'Value_Current_Million']].rename(
@@ -111,6 +68,19 @@ def analyze_extended_trends():
     # Calculate projected growth
     merged['Projected_Growth_2023_2026_%'] = ((merged['Projected_2026_Million'] - merged['Value_2023']) /
                                               merged['Value_2023'] * 100)
+    return merged
+
+
+def analyze_extended_trends():
+    """Analyze trends across 2020-2023 with 2025-26 projections"""
+
+    data = load_all_files()
+
+    if len(data) < 2:
+        print("Not enough data for trend analysis (need at least 2 years)")
+        return
+
+    merged = build_projection_frame(data)
 
     print("\n" + "="*100)
     print("EXTENDED ANALYSIS: 2020-2023 WITH 2025-26 PROJECTIONS")
@@ -153,12 +123,12 @@ def analyze_extended_trends():
 
     # Calculate CAGR 2020-2023
     high_growth['CAGR_2020_2023'] = (
-        (high_growth['Value_2023'] / high_growth['Value_2020']) ** (1/3) - 1
+        (high_growth['Value_2023'] / high_growth['Value_2020']) ** (1/HISTORY_YEARS) - 1
     ) * 100
 
     # Project CAGR forward
     high_growth['Projected_CAGR_2023_2026'] = (
-        (high_growth['Projected_2026_Million'] / high_growth['Value_2023']) ** (1/3) - 1
+        (high_growth['Projected_2026_Million'] / high_growth['Value_2023']) ** (1/HISTORY_YEARS) - 1
     ) * 100
 
     cagr_display = high_growth[['Commodity', 'CAGR_2020_2023', 'Projected_CAGR_2023_2026']].copy()
@@ -243,8 +213,8 @@ def analyze_extended_trends():
     print(f"Projected 2026 value: ${total_2026:,.0f}M")
     print(f"Projected growth 2023-2026: +{((total_2026-total_2023)/total_2023)*100:.1f}%")
 
-    avg_cagr_2020_2023 = ((total_2023/total_2020) ** (1/3) - 1) * 100
-    avg_cagr_2023_2026 = ((total_2026/total_2023) ** (1/3) - 1) * 100
+    avg_cagr_2020_2023 = ((total_2023/total_2020) ** (1/HISTORY_YEARS) - 1) * 100
+    avg_cagr_2023_2026 = ((total_2026/total_2023) ** (1/HISTORY_YEARS) - 1) * 100
 
     print(f"\nAverage CAGR 2020-2023: {avg_cagr_2020_2023:.2f}%")
     print(f"Projected CAGR 2023-2026: {avg_cagr_2023_2026:.2f}%")

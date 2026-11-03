@@ -6,27 +6,32 @@ Caches results to avoid reprocessing identical files.
 Uses pandas/openpyxl for Excel, built-in tools for others.
 """
 
+from __future__ import annotations
+
 import sys
 import json
 import re
 import os
 import hashlib
+import zipfile
 from pathlib import Path
+from typing import Optional
 
 # Cache directory
 CACHE_DIR = Path.home() / ".claude" / "hooks" / ".markitdown-cache"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+MAX_CHARS = 50000  # truncate very large files to avoid token explosion
+FILE_REF_PATTERN = r'@["\']([^"\']+)["\']'  # @"/path/to/file" or @'/path/to/file'
 
-def get_cache_key(filepath: str) -> str:
+def get_cache_key(filepath: str) -> Optional[str]:
     """Generate cache key from file path and modification time."""
     try:
         mtime = os.path.getmtime(filepath)
         key_string = f"{filepath}:{mtime}"
         return hashlib.md5(key_string.encode()).hexdigest()
-    except:
+    except OSError:
         return None
 
-def get_cached_markdown(filepath: str) -> str:
+def get_cached_markdown(filepath: str) -> Optional[str]:
     """Retrieve cached markdown for a file."""
     cache_key = get_cache_key(filepath)
     if not cache_key:
@@ -36,7 +41,7 @@ def get_cached_markdown(filepath: str) -> str:
     if cache_file.exists():
         try:
             return cache_file.read_text(encoding='utf-8')
-        except:
+        except (OSError, ValueError):
             return None
     return None
 
@@ -48,47 +53,48 @@ def save_to_cache(filepath: str, markdown: str) -> None:
 
     cache_file = CACHE_DIR / f"{cache_key}.md"
     try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
         cache_file.write_text(markdown, encoding='utf-8')
-    except:
-        pass
+    except OSError:
+        pass  # caching is best-effort; a hook must never fail on it
 
-def convert_excel_to_markdown(filepath: str) -> str:
+def convert_excel_to_markdown(filepath: str) -> Optional[str]:
     """Convert Excel file to markdown."""
     try:
         import pandas as pd
         df = pd.read_excel(filepath, sheet_name=0, nrows=100)
         return df.to_markdown(index=False)
-    except:
+    except (ImportError, OSError, ValueError, zipfile.BadZipFile):
         return None
 
-def convert_csv_to_markdown(filepath: str) -> str:
+def convert_csv_to_markdown(filepath: str) -> Optional[str]:
     """Convert CSV file to markdown."""
     try:
         import pandas as pd
         df = pd.read_csv(filepath, nrows=100)
         return df.to_markdown(index=False)
-    except:
+    except (ImportError, OSError, ValueError):
         return None
 
-def convert_json_to_markdown(filepath: str) -> str:
+def convert_json_to_markdown(filepath: str) -> Optional[str]:
     """Convert JSON to markdown."""
     try:
         import json as json_module
         with open(filepath) as f:
             data = json_module.load(f)
         return f"```json\n{json_module.dumps(data, indent=2)}\n```"
-    except:
+    except (OSError, ValueError):
         return None
 
-def convert_text_to_markdown(filepath: str) -> str:
+def convert_text_to_markdown(filepath: str) -> Optional[str]:
     """Read text/markdown file as-is."""
     try:
         with open(filepath, encoding='utf-8') as f:
             return f.read()
-    except:
+    except (OSError, ValueError):
         return None
 
-def convert_file_to_markdown(filepath: str) -> str:
+def convert_file_to_markdown(filepath: str) -> Optional[str]:
     """Convert file to markdown using appropriate handler, with caching."""
     filepath = os.path.expanduser(filepath)
 
@@ -133,7 +139,7 @@ def process_prompt(prompt_text: str) -> str:
         return prompt_text
 
     # Pattern to match @"/path/to/file" or @'/path/to/file'
-    pattern = r'@["\']([^"\']+)["\']'
+    pattern = FILE_REF_PATTERN
 
     def replace_with_markdown(match):
         filepath = match.group(1)
@@ -143,9 +149,8 @@ def process_prompt(prompt_text: str) -> str:
             # Wrap in markdown code block with filename
             filename = os.path.basename(filepath)
             # Truncate very large files to avoid token explosion
-            max_chars = 50000
-            if len(markdown) > max_chars:
-                markdown = markdown[:max_chars] + f"\n\n... (truncated, {len(markdown)} total chars)"
+            if len(markdown) > MAX_CHARS:
+                markdown = markdown[:MAX_CHARS] + f"\n\n... (truncated, {len(markdown)} total chars)"
             return f"\n**File: {filename}**\n\n```\n{markdown}\n```\n"
         else:
             # If conversion fails, keep the original reference
@@ -168,7 +173,7 @@ def main():
             processed_prompt = process_prompt(prompt)
 
             # Count file references
-            file_ref_count = len(re.findall(r'@["\']([^"\']+)["\']', prompt))
+            file_ref_count = len(re.findall(FILE_REF_PATTERN, prompt))
 
             # Return result with modified prompt
             result = {
@@ -190,7 +195,7 @@ def main():
     except json.JSONDecodeError:
         # Invalid JSON input - just pass through
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit"}}))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - a UserPromptSubmit hook must never block the prompt
         # On any error, pass through without blocking
         print(json.dumps({
             "hookSpecificOutput": {
