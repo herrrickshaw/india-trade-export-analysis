@@ -9,12 +9,24 @@ from pathlib import Path
 import numpy as np
 from tradestat_config import export_files, import_file, drop_total_row
 
+# TradeStat commodity-wise downloads end with a national-total row
+# ("India's Total Export" / "India's Total Import") in the Commodity and
+# HSCode columns. Summing it together with the commodity rows doubles totals.
+TOTAL_ROW_PATTERN = r"^\s*(india'?s\s+)?total(\s+(export|import)s?)?\s*$"
+
+
+def drop_total_rows(df):
+    """Remove TradeStat national-total rows; keep commodities that merely mention 'total'."""
+    is_total = (df['Commodity'].astype(str).str.match(TOTAL_ROW_PATTERN, case=False)
+                | df['HSCode'].astype(str).str.match(TOTAL_ROW_PATTERN, case=False))
+    return df[~is_total]
+
 def load_export_file(filepath, year=None):
     """Load export data"""
     df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
     df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
-    df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
+    df = drop_total_rows(df.dropna(subset=['Commodity', 'Value_Current_Million'])).copy()
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
     df, _ = drop_total_row(df, 'Commodity')  # grand total would double every sum
     if year:
@@ -27,7 +39,7 @@ def load_import_file(filepath, year=None):
     df = pd.read_excel(filepath, sheet_name=0, skiprows=2)
     df.columns = ['S.No.', 'HSCode', 'Commodity', 'Value_Current_Million',
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
-    df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
+    df = drop_total_rows(df.dropna(subset=['Commodity', 'Value_Current_Million'])).copy()
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
     df, _ = drop_total_row(df, 'Commodity')  # grand total would double every sum
     if year:

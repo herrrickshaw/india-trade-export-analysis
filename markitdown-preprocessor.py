@@ -178,8 +178,12 @@ def main():
                 }
             }
 
-            # If prompt changed, include a note
+            # If prompt changed, hand the converted file content to the model
+            # (UserPromptSubmit hooks cannot rewrite the prompt; additionalContext
+            # is how the converted markdown reaches Claude).
             if processed_prompt != prompt:
+                result["hookSpecificOutput"]["additionalContext"] += (
+                    "\n\n" + processed_prompt)
                 result["systemMessage"] = f"✓ Markitdown: {file_ref_count} file(s) converted to markdown format"
 
             print(json.dumps(result))
