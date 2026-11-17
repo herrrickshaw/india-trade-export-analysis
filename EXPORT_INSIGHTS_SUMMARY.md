@@ -83,9 +83,9 @@
 
 | Metric | 2020 | 2022 | 2023 | Trend |
 |--------|------|------|------|-------|
-| Total Exports ($B) | 583.6 | 902.1 | 875.4 | Peaked 2022, slight decline 2023 |
+| Total Exports ($B) | 291.8 | 451.1 | 437.7 | Peaked 2022, slight decline 2023 (corrected: previous 583.6 / 902.1 / 875.4 were 2x, see README) |
 | Commodity Count | 11,128 | 11,536 | 11,566 | Diversification increasing |
-| Avg Value/Commodity ($M) | 52.4 | 78.2 | 75.7 | Average falling (more niche exports) |
+| Avg Value/Commodity ($M) | 26.2 | 39.1 | 37.8 | Corrected (previous 52.4 / 78.2 / 75.7 were 2x; assumes the commodity count includes the total row) |
 
 ---
 

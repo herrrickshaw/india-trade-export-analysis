@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import numpy as np
 from datetime import datetime
+from tradestat_config import export_files, out_dir, drop_total_row, merge_years
 
 def load_export_file(filepath, year=None):
     """Load export data from Excel file"""
@@ -16,6 +17,9 @@ def load_export_file(filepath, year=None):
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
     df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
+    df, total = drop_total_row(df, 'Commodity', 'Value_Current_Million')  # grand total would double every sum
+    if total:
+        print(f"  {year}: workbook total ${total:,.0f}M vs line items ${df['Value_Current_Million'].sum():,.0f}M")
     df['Growth_%'] = pd.to_numeric(df['Growth_%'], errors='coerce')
     if year:
         df['Year'] = year
@@ -34,13 +38,7 @@ def extract_year(filepath):
 
 def load_all_files():
     """Load all available export data files"""
-    base_path = Path.home() / "Downloads" / "import export data"
-
-    files = {
-        2020: base_path / "TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-        2022: base_path / "TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-        2023: base_path / "TradeStat-Eidb-Export-Commodity-wise.xlsx",
-    }
+    files = export_files()  # set --data-dir / TRADESTAT_DIR
 
     data = {}
     for year, filepath in files.items():
@@ -88,12 +86,12 @@ def analyze_extended_trends():
         return
 
     # Merge 2020 and 2023 for growth analysis
-    df_2020 = data[2020][['Commodity', 'Value_Current_Million']].rename(
+    df_2020 = data[2020][['HSCode', 'Commodity', 'Value_Current_Million']].rename(
         columns={'Value_Current_Million': 'Value_2020'})
-    df_2023 = data[2023][['Commodity', 'Value_Current_Million']].rename(
+    df_2023 = data[2023][['HSCode', 'Commodity', 'Value_Current_Million']].rename(
         columns={'Value_Current_Million': 'Value_2023'})
 
-    merged = pd.merge(df_2020, df_2023, on='Commodity', how='inner')
+    merged = merge_years(df_2020, df_2023)
     merged['Value_2020'] = pd.to_numeric(merged['Value_2020'], errors='coerce')
     merged['Value_2023'] = pd.to_numeric(merged['Value_2023'], errors='coerce')
     merged = merged.dropna()
@@ -221,7 +219,7 @@ def analyze_extended_trends():
 
     # Full dataset with projections
     output_df = merged.sort_values('Value_2023', ascending=False)
-    output_df.to_csv('EXTENDED_ANALYSIS_2020_2026.csv', index=False)
+    output_df.to_csv(out_dir() / 'EXTENDED_ANALYSIS_2020_2026.csv', index=False)
     print("\n✓ Full analysis exported: EXTENDED_ANALYSIS_2020_2026.csv")
 
     # High-opportunity with projections
@@ -230,7 +228,7 @@ def analyze_extended_trends():
         (merged['Growth_2020_2023_%'] > 50)
     ].sort_values('Value_2023', ascending=False)
 
-    high_opp.to_csv('HIGH_OPPORTUNITY_2026_PROJECTIONS.csv', index=False)
+    high_opp.to_csv(out_dir() / 'HIGH_OPPORTUNITY_2026_PROJECTIONS.csv', index=False)
     print("✓ High-opportunity forecast: HIGH_OPPORTUNITY_2026_PROJECTIONS.csv")
 
     # Summary stats

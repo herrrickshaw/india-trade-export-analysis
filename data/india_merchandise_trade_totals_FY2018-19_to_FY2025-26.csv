@@ -1,0 +1,9 @@
+fiscal_year,exports_usd_million,imports_usd_million,balance_usd_million,source,retrieved,note
+2018-19,330078.1,514078.4,-184000.3,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2019-20,313361.1,474709.3,-161348.2,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2020-21,291808.5,394435.9,-102627.4,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2021-22,422004.4,613052.1,-191047.7,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2022-23,451070.0,715968.9,-264898.9,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2023-24,437072.1,678214.8,-241142.7,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2024-25,437704.5,721200.3,-283495.8,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,""
+2025-26,441745.9,776013.7,-334267.8,"india-trade-data-analysis data/tradestat_hsn_export_import_2018-19_to_2025-26.json (DGCI&S TRADESTAT eidb 2-digit HS chapter totals)",2026-07-18,"provisional (source data last updated 19 May 2026)"

@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from pathlib import Path
 import numpy as np
+from tradestat_config import export_files, import_file, drop_total_row
 
 def load_export_file(filepath, year=None):
     """Load export data"""
@@ -15,6 +16,7 @@ def load_export_file(filepath, year=None):
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
     df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
+    df, _ = drop_total_row(df, 'Commodity')  # grand total would double every sum
     if year:
         df['Year'] = year
     df['Type'] = 'EXPORT'
@@ -27,6 +29,7 @@ def load_import_file(filepath, year=None):
                   'Share_Current', 'Value_Next_Million', 'Share_Next', 'Growth_%']
     df = df.dropna(subset=['Commodity', 'Value_Current_Million'])
     df['Value_Current_Million'] = pd.to_numeric(df['Value_Current_Million'], errors='coerce')
+    df, _ = drop_total_row(df, 'Commodity')  # grand total would double every sum
     if year:
         df['Year'] = year
     df['Type'] = 'IMPORT'
@@ -34,21 +37,9 @@ def load_import_file(filepath, year=None):
 
 def load_all_data():
     """Load both import and export data"""
-    base_path = Path.home() / "Downloads" / "import export data"
-
     data = {}
-
-    # Export files
-    export_files = {
-        2020: base_path / "TradeStat-Eidb-Export-Commodity-wise 2020.xlsx",
-        2022: base_path / "TradeStat-Eidb-Export-Commodity-wise2022.xlsx",
-        2023: base_path / "TradeStat-Eidb-Export-Commodity-wise.xlsx",
-    }
-
-    # Import files
-    import_files = {
-        2020: base_path / "TradeStat-Eidb-Import-Commodity-wise.xlsx",  # Assuming same name pattern
-    }
+    export_files_ = export_files()  # set --data-dir / TRADESTAT_DIR
+    import_path = import_file()
 
     print("\n" + "="*100)
     print("LOADING TRADE DATA")
@@ -56,7 +47,7 @@ def load_all_data():
 
     # Load exports
     data['exports'] = {}
-    for year, filepath in export_files.items():
+    for year, filepath in export_files_.items():
         if os.path.exists(filepath):
             try:
                 df = load_export_file(filepath, year)
@@ -68,7 +59,6 @@ def load_all_data():
     # Load imports
     data['imports'] = {}
     # Try to detect which year the import file is from
-    import_path = base_path / "TradeStat-Eidb-Import-Commodity-wise.xlsx"
     if os.path.exists(import_path):
         try:
             # Try loading and checking the data to infer year
